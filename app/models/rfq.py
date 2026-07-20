@@ -79,6 +79,31 @@ class RFQExtraction(BaseModel):
         description="Full Service or Fieldwork Only."
     )
 
+    loi: Optional[int] = Field(
+        default=None,
+        description="Expected Length of Interview (LOI) in minutes."
+    )
+
+    ir: Optional[int] = Field(
+        default=None,
+        description="Expected Incidence Rate (IR) percentage."
+    )
+
+    languages: Optional[list[str]] = Field(
+        default=None,
+        description="Survey languages required for the project."
+    )
+
+    client: Optional[str] = Field(
+        default=None,
+        description="Client requesting the quotation."
+    )
+
+    end_client: Optional[str] = Field(
+        default=None,
+        description="End client if explicitly mentioned."
+    )
+
     additional_notes: Optional[str] = Field(
         default=None,
         description="Additional requirements or notes."

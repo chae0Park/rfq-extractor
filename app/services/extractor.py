@@ -2,18 +2,18 @@ from openai import OpenAI
 
 from app.config.settings import settings
 from app.models.request import RFQRequest
+from app.models.result import RFQExtractionResult
 from app.models.rfq import RFQExtraction
 from app.prompts.extraction import EXTRACTION_SYSTEM_PROMPT
+from app.services.validator import RFQValidator
 
 
-# class RFQExtractor:
-#     def __init__(self):
-#         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
 class RFQExtractor:
     def __init__(self):
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.validator = RFQValidator()
 
-    def extract(self, request: RFQRequest) -> RFQExtraction:
+    def extract(self, request: RFQRequest) -> RFQExtractionResult:
         response = self.client.responses.parse(
             model=settings.OPENAI_MODEL,
             input=[
@@ -29,4 +29,6 @@ class RFQExtractor:
             text_format=RFQExtraction,
         )
 
-        return response.output_parsed
+        extracted = response.output_parsed
+
+        return self.validator.validate(extracted)
