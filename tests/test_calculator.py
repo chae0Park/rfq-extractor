@@ -5,16 +5,18 @@ from app.services.calculator import RFQCalculator
 def main():
     
     rfq = RFQExtraction(
-        country="South Korea",
-        sample_size=1000,
-        loi=20,
-        ir=20,
+        countries=[
+            "South Korea",
+            "Japan",
+        ],
+        sample_size=500,
+        loi=15,
+        ir=30,
         languages=[
             "Korean",
-            "Japanese",
+            "Japanese"
         ],
-        rush=True,
-        client_tier="Enterprise",
+        currency="EUR",
     )
     calculator = RFQCalculator()
 

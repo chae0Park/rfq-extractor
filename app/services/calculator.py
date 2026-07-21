@@ -3,6 +3,7 @@ from app.models.rfq import RFQExtraction
 from app.services.base_cost_loader import BaseCostLoader
 from app.services.panel_cpi_loader import PanelCPILoader
 from app.services.translation_fee_loader import TranslationFeeLoader
+from app.models.calculator import EXCHANGE_RATES
 
 
 class RFQCalculator:
@@ -13,30 +14,43 @@ class RFQCalculator:
         self.translation_fee_loader = TranslationFeeLoader()
 
     def calculate(self, rfq: RFQExtraction) -> QuotationResult:
-        if rfq.country is None:
-            raise ValueError("Country is required for quotation calculation.")
+        if rfq.country is None and not rfq.countries:
+            raise ValueError("At least one country is required for quotation calculation.")
 
-        base_cost = self.base_cost_loader.get_base_cost(rfq.country)
+        countries = rfq.countries or [rfq.country]
 
         loi_multiplier = self._calculate_loi_multiplier(rfq.loi)
         ir_multiplier = self._calculate_ir_multiplier(rfq.ir)
 
-        sample_cost = (
-            self._calculate_sample_cost(
-                rfq.country,
-                rfq.sample_size,
+        total_base_cost = 0
+        total_sample_cost = 0
+        direct_cost = 0
+
+        for country in countries:
+
+            base_cost = self.base_cost_loader.get_base_cost(country)
+
+            sample_cost = (
+                self._calculate_sample_cost(
+                    country,
+                    rfq.sample_size,
+                )
+                * loi_multiplier
+                * ir_multiplier
             )
-            * loi_multiplier
-            * ir_multiplier
-        )
+            total_base_cost += base_cost
+            total_sample_cost += sample_cost
+
+            direct_cost += (
+                base_cost
+                + sample_cost
+            )
 
         programming_fee = self._calculate_programming_fee(rfq)
         translation_fee = self._calculate_translation_fee(rfq)
 
-        direct_cost = (
-            base_cost
-            + sample_cost
-            + programming_fee
+        direct_cost += (
+            programming_fee
             + translation_fee
         )
 
@@ -62,21 +76,29 @@ class RFQCalculator:
 
         total_cost = total_before_discount - client_discount
 
+        currency = rfq.currency or "USD"
+
+        total_cost = self._convert_currency(
+            total_cost,
+            currency,
+        )
+
 
         return QuotationResult(
-            country=rfq.country,
+            countries=countries,
+            currency=currency,
             total_cost=total_cost,
             breakdown=CostBreakdown(
-                base_cost=base_cost,
-                sample_cost=sample_cost,
+                base_cost=self._convert_currency(total_base_cost, currency),
+                sample_cost=self._convert_currency(total_sample_cost, currency),
                 loi_multiplier=loi_multiplier,
                 ir_multiplier=ir_multiplier,
-                programming_fee=programming_fee,
-                translation_fee=translation_fee,
-                pm_fee=pm_fee,
-                rush_fee=rush_fee,
-                margin=margin,
-                client_discount=client_discount,
+                programming_fee=self._convert_currency(programming_fee,currency),
+                translation_fee=self._convert_currency(translation_fee,currency),
+                pm_fee=self._convert_currency(pm_fee,currency),
+                rush_fee=self._convert_currency(rush_fee,currency),
+                margin=self._convert_currency(margin,currency),
+                client_discount=self._convert_currency(client_discount,currency),
             ),
         )
 
@@ -221,3 +243,16 @@ class RFQCalculator:
             return round(total_cost * 0.10, 2)
 
         return 0
+    
+    def _convert_currency(
+        self,
+        amount: float,
+        currency: str,
+    ) -> float:
+
+        rate = EXCHANGE_RATES.get(currency.upper())
+
+        if rate is None:
+            raise ValueError(f"Unsupported currency: {currency}")
+
+        return round(amount * rate, 2)

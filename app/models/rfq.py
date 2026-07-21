@@ -124,3 +124,8 @@ class RFQExtraction(BaseModel):
         description="Client pricing tier."
     )
 
+    currency: str | None = Field(
+        default="USD",
+        description="Requested quotation currency."
+    )
+
