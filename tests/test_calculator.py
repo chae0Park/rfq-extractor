@@ -9,6 +9,12 @@ def main():
         sample_size=1000,
         loi=20,
         ir=20,
+        languages=[
+            "Korean",
+            "Japanese",
+        ],
+        rush=True,
+        client_tier="Enterprise",
     )
     calculator = RFQCalculator()
 

@@ -14,6 +14,11 @@ class RFQExtraction(BaseModel):
         description="Target country."
     )
 
+    countries: list[str] | None = Field(
+        default=None,
+        description="List of countries included in a multi-country RFQ."
+    )
+
     region: Optional[str] = Field(
         default=None,
         description="Target region or state."
@@ -108,3 +113,14 @@ class RFQExtraction(BaseModel):
         default=None,
         description="Additional requirements or notes."
     )
+
+    rush: bool | None = Field(
+        default=False,
+        description="Whether the project requires expedited delivery."
+    )
+
+    client_tier: str | None = Field(
+        default="Standard",
+        description="Client pricing tier."
+    )
+
